@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="tripPlannerApp">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trip Itinerary Planner</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- AngularJS CDN -->
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #0c0f0a;
+            --card-bg: rgba(22, 28, 18, 0.75);
+            --neon-yellow: #d4ff00;
+            --lime-yellow: #e2ff3b;
+            --light-green: #22c55e;
+            --emerald-glow: #10b981;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-glow: rgba(212, 255, 0, 0.2);
+            --border-glow-focus: rgba(212, 255, 0, 0.5);
+            --font-display: 'Outfit', sans-serif;
+            --font-sans: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: linear-gradient(135deg, rgba(12, 15, 10, 0.98), rgba(20, 28, 15, 0.92)), url('travel_planner_bg.png') no-repeat center center fixed;
+            background-size: cover;
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 2rem 1rem;
+            overflow-x: hidden;
+        }
+
+        .app-wrapper {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        /* Centered Card Layout */
+        .container-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glow);
+            border-radius: 24px;
+            padding: 2.5rem 2rem;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 
+                        0 0 30px rgba(212, 255, 0, 0.05);
+            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .container-card:hover {
+            border-color: rgba(212, 255, 0, 0.3);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 
+                        0 0 40px rgba(212, 255, 0, 0.08);
+        }
+
+        /* App Title Styling */
+        .app-header {
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .app-title {
+            font-family: var(--font-display);
+            font-size: 2.25rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: linear-gradient(135deg, var(--lime-yellow) 0%, var(--light-green) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 4px 12px rgba(212, 255, 0, 0.1);
+            margin-bottom: 0.25rem;
+        }
+
+        .app-subtitle {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        /* Form styling */
+        .plan-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            position: relative;
+        }
+
+        .input-group label {
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--lime-yellow);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .input-group label svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        /* Text Input */
+        .input-field {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 0.875rem 1rem;
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            border-color: var(--lime-yellow);
+            background: rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 10px rgba(212, 255, 0, 0.15);
+        }
+
+        /* Date Range Picker Container */
+        .date-range-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .date-input-wrapper {
+            position: relative;
+        }
+
+        .date-input-wrapper input[type="date"] {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 0.875rem 1rem;
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .date-input-wrapper input[type="date"]:focus {
+            border-color: var(--lime-yellow);
+            box-shadow: 0 0 10px rgba(212, 255, 0, 0.15);
+        }
+
+        /* Range Slider Styling */
+        .slider-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .label-with-value {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .value-badge {
+            background: rgba(212, 255, 0, 0.15);
+            color: var(--lime-yellow);
+            font-family: var(--font-display);
+            font-weight: 700;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            border: 1px solid rgba(212, 255, 0, 0.3);
+            box-shadow: 0 0 10px rgba(212, 255, 0, 0.05);
+        }
+
+        .budget-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+
+        .budget-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--lime-yellow);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(212, 255, 0, 0.5);
+            transition: transform 0.1s ease;
+        }
+
+        .budget-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.25);
+        }
+
+        .slider-limits {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Members Number Input Custom Stepper */
+        .number-input-wrapper {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .num-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-size: 1.25rem;
+            width: 50px;
+            height: 46px;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease;
+            outline: none;
+            font-family: var(--font-display);
+            font-weight: 600;
+        }
+
+        .num-btn:hover {
+            background: rgba(212, 255, 0, 0.1);
+            color: var(--lime-yellow);
+        }
+
+        .number-input-wrapper input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            height: 46px;
+            text-align: center;
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            font-size: 1.1rem;
+            font-weight: 600;
+            outline: none;
+            -moz-appearance: textfield;
+        }
+
+        .number-input-wrapper input::-webkit-outer-spin-button,
+        .number-input-wrapper input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* Submit Button */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--neon-yellow) 0%, var(--light-green) 100%);
+            border: none;
+            border-radius: 14px;
+            color: #052e16;
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(212, 255, 0, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 52px;
+            width: 100%;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(212, 255, 0, 0.35);
+            filter: brightness(1.1);
+        }
+
+        .btn-primary:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Loading Spinner */
+        .loading-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            font-weight: 600;
+        }
+
+        .spinner {
+            animation: rotate 2s linear infinite;
+            width: 22px;
+            height: 22px;
+        }
+
+        .spinner .path {
+            stroke: currentColor;
+            stroke-linecap: round;
+            animation: dash 1.5s ease-in-out infinite;
+        }
+
+        @keyframes rotate {
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes dash {
+            0% {
+                stroke-dasharray: 1, 150;
+                stroke-dashoffset: 0;
+            }
+            50% {
+                stroke-dasharray: 90, 150;
+                stroke-dashoffset: -35;
+            }
+            100% {
+                stroke-dasharray: 90, 150;
+                stroke-dashoffset: -124;
+            }
+        }
+
+        /* Error Box */
+        .error-message {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 1rem;
+            color: #fca5a5;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            animation: slideIn 0.3s ease-out;
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+        }
+
+        .error-message svg {
+            flex-shrink: 0;
+            width: 18px;
+            height: 18px;
+            fill: #fca5a5;
+        }
+
+        /* Output Card Style */
+        .itinerary-card {
+            display: none; /* hidden by default */
+            margin-top: 1rem;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .itinerary-card.show-active {
+            display: block; /* Custom display block toggle class */
+        }
+
+        .itinerary-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .itinerary-dest-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--lime-yellow);
+            line-height: 1.3;
+        }
+
+        .itinerary-metadata {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .metadata-badge {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .itinerary-body {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Styled sub-sections inside parsed output */
+        .itinerary-section {
+            background: rgba(0, 0, 0, 0.2);
+            border-left: 3px solid var(--light-green);
+            padding: 1rem 1.25rem;
+            border-radius: 0 12px 12px 0;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .itinerary-section:hover {
+            transform: translateX(4px);
+            border-color: var(--lime-yellow);
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--lime-yellow);
+            margin-bottom: 0.5rem;
+        }
+
+        .section-details-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .section-details-list li {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: #e2e8f0;
+            position: relative;
+            padding-left: 1.25rem;
+        }
+
+        .section-details-list li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--light-green);
+            font-weight: bold;
+        }
+
+        /* Action buttons for Premium Feel */
+        .output-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 1.25rem;
+        }
+
+        .btn-secondary {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: var(--text-main);
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(212, 255, 0, 0.1);
+            border-color: var(--border-glow);
+            color: var(--lime-yellow);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            body {
+                padding: 1rem 0.5rem;
+            }
+
+            .container-card {
+                padding: 1.75rem 1.25rem;
+                border-radius: 16px;
+            }
+
+            .date-range-container {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+
+            .app-title {
+                font-size: 1.85rem;
+            }
+        }
+    </style>
+</head>
+<body ng-controller="PlannerController">
+
+<div class="app-wrapper">
+
+    <!-- Header Section -->
+    <header class="app-header">
+        <h1 class="app-title">Trip Iternary Planner</h1>
+        <p class="app-subtitle">Create Your Dream Getaway Instantly</p>
+    </header>
+
+    <!-- Main Input Form Card -->
+    <main class="container-card">
+        <form class="plan-form" name="planningForm" novalidate>
+            
+            <!-- Destination Input -->
+            <div class="input-group">
+                <label for="destination">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                    Destination
+                </label>
+                <input type="text" id="destination" name="destination" 
+                       ng-model="destination" class="input-field" 
+                       placeholder="e.g. Kyoto, Japan or Rome, Italy" required>
+            </div>
+
+            <!-- Duration input (Calendar Dates format) -->
+            <div class="input-group">
+                <label>
+                    <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+                    Duration (Calendar Dates)
+                </label>
+                <div class="date-range-container">
+                    <div class="date-input-wrapper">
+                        <input type="date" id="start-date" name="startDate" 
+                               ng-model="startDate" required aria-label="Start Date">
+                    </div>
+                    <div class="date-input-wrapper">
+                        <input type="date" id="end-date" name="endDate" 
+                               ng-model="endDate" required aria-label="End Date">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Budget Range Slider -->
+            <div class="input-group slider-wrapper">
+                <div class="label-with-value">
+                    <label for="budget">
+                        <svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+                        Budget Range
+                    </label>
+                    <span class="value-badge">${{budget | number}}</span>
+                </div>
+                <input type="range" id="budget" name="budget" ng-model="budget" 
+                       min="100" max="10000" step="100" class="budget-slider">
+                <div class="slider-limits">
+                    <span>Min: $100</span>
+                    <span>Max: $10,000</span>
+                </div>
+            </div>
+
+            <!-- Total Members Input -->
+            <div class="input-group">
+                <label for="members">
+                    <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                    Total Members
+                </label>
+                <div class="number-input-wrapper">
+                    <button type="button" ng-click="decrementMembers()" class="num-btn" aria-label="Decrease members">-</button>
+                    <input type="number" id="members" name="members" 
+                           ng-model="members" min="1" max="100" required>
+                    <button type="button" ng-click="incrementMembers()" class="num-btn" aria-label="Increase members">+</button>
+                </div>
+            </div>
+
+            <!-- Error Alerts -->
+            <div class="error-message" ng-if="errorMessage">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                <span>{{errorMessage}}</span>
+            </div>
+
+            <!-- Start Planning Button -->
+            <button type="button" class="btn-primary" ng-click="startPlanning()" ng-disabled="loading">
+                <span ng-if="!loading">START PLANNING</span>
+                <span ng-if="loading" class="loading-container">
+                    <svg class="spinner" viewBox="0 0 50 50">
+                        <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+                    </svg>
+                    Trip planning....
+                </span>
+            </button>
+
+        </form>
+    </main>
+
+    <!-- Itinerary Output Card (Hidden by default, ng-class applies active display toggle) -->
+    <div class="container-card itinerary-card" ng-class="{'show-active': showItinerary}">
+        <div class="itinerary-header">
+            <h2 class="itinerary-dest-title">{{itinerary.title}}</h2>
+            <div class="itinerary-metadata">
+                <span class="metadata-badge">👥 {{members}} Members</span>
+                <span class="metadata-badge">💰 Budget: ${{budget | number}}</span>
+                <span class="metadata-badge">📅 {{getDurationDays()}} Days</span>
+            </div>
+        </div>
+
+        <div class="itinerary-body">
+            <div class="itinerary-section" ng-repeat="section in itinerary.sections">
+                <h3 class="section-title">{{section.title}}</h3>
+                <ul class="section-details-list">
+                    <li ng-repeat="item in section.items">{{item}}</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="output-actions">
+            <button class="btn-secondary" ng-click="copyToClipboard()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+                Copy Plan
+            </button>
+            <button class="btn-secondary" ng-click="resetPlanner()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                Plan Another
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<!-- Logic Script (AngularJS & REST API config) -->
+<script>
+    // Layer 4: Store API key in this exact constant
+    const GEMINI_API_KEY = '';
+
+    angular.module('tripPlannerApp', [])
+    .controller('PlannerController', ['$scope', '$http', '$timeout', function($scope, $http, $timeout) {
+        // Init models
+        $scope.destination = '';
+        $scope.startDate = '';
+        $scope.endDate = '';
+        $scope.budget = 1500;
+        $scope.members = 2;
+
+        $scope.loading = false;
+        $scope.showItinerary = false;
+        $scope.errorMessage = '';
+        $scope.itinerary = null;
+
+        // Custom steppers
+        $scope.incrementMembers = function() {
+            $scope.members = ($scope.members || 0) + 1;
+        };
+
+        $scope.decrementMembers = function() {
+            if ($scope.members > 1) {
+                $scope.members = $scope.members - 1;
+            }
+        };
+
+        // Helpers
+        // Format date objects to YYYY-MM-DD
+        $scope.formatDate = function(dateObj) {
+            if (!dateObj) return '';
+            const d = new Date(dateObj);
+            let month = '' + (d.getMonth() + 1);
+            let day = '' + d.getDate();
+            const year = d.getFullYear();
+
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+
+            return [year, month, day].join('-');
+        };
+
+        $scope.getDurationDays = function() {
+            if (!$scope.startDate || !$scope.endDate) return 0;
+            const start = new Date($scope.startDate);
+            const end = new Date($scope.endDate);
+            const diffTime = Math.abs(end - start);
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        };
+
+        $scope.getDurationText = function() {
+            const days = $scope.getDurationDays();
+            if (days <= 0) return '';
+            return `${days} days (${$scope.formatDate($scope.startDate)} to ${$scope.formatDate($scope.endDate)})`;
+        };
+
+        // Call Google Gemini REST API
+        $scope.startPlanning = function() {
+            // Form validations
+            if (!$scope.destination) {
+                $scope.errorMessage = 'Please specify a destination.';
+                return;
+            }
+            if (!$scope.startDate || !$scope.endDate) {
+                $scope.errorMessage = 'Please choose both start and end dates.';
+                return;
+            }
+            if (new Date($scope.startDate) > new Date($scope.endDate)) {
+                $scope.errorMessage = 'The start date cannot be after the end date.';
+                return;
+            }
+            if (!$scope.members || $scope.members < 1) {
+                $scope.errorMessage = 'Please enter at least 1 member.';
+                return;
+            }
+
+            $scope.loading = true;
+            $scope.errorMessage = '';
+            $scope.showItinerary = false;
+
+            // Warn if API key is not supplied yet
+            if (!GEMINI_API_KEY) {
+                $timeout(function() {
+                    $scope.loading = false;
+                    $scope.errorMessage = 'API Key is missing! Open index.html and set your Gemini API key in the constant line: const GEMINI_API_KEY = "YOUR_KEY_HERE";';
+                }, 800);
+                return;
+            }
+
+            const destination = $scope.destination;
+            const duration = $scope.getDurationText();
+            const budget = '$' + $scope.budget.toLocaleString();
+            const members = $scope.members;
+
+            // Prompt exactly format requested in Layer 4
+            const promptText = `i have 4 inputs for trip iternary planning: [${destination}],[${duration}],[${budget}],[${members}].Suggest  a proper detailed iternary with locations, hotels, foods including the price according to the number of members\nFormat: "Destiantion name + Iternary" :.... location1:....location2:.....location3:.......etc`;
+
+            const apiEndpoints = [
+                'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY,
+                'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY,
+                'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=' + GEMINI_API_KEY,
+                'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_API_KEY
+            ];
+
+            const requestPayload = {
+                contents: [{
+                    parts: [{
+                        text: promptText
+                    }]
+                }]
+            };
+
+            const makeRequest = function(index) {
+                if (index >= apiEndpoints.length) {
+                    $scope.loading = false;
+                    $scope.errorMessage = 'Friendly Reminder: The API call failed on all endpoints. Please verify your API key, check your network connection, and make sure your key is authorized for Gemini 2.5/1.5 Flash.';
+                    return;
+                }
+
+                const url = apiEndpoints[index];
+                $http.post(url, requestPayload)
+                .then(function(response) {
+                    $scope.loading = false;
+                    try {
+                        if (response.data && response.data.candidates && response.data.candidates[0].content.parts[0].text) {
+                            const responseText = response.data.candidates[0].content.parts[0].text;
+                            $scope.itinerary = $scope.parseResponse(responseText);
+                            $scope.showItinerary = true;
+                            
+                            // Smooth scroll to the output card
+                            $timeout(function() {
+                                const itineraryCardEl = document.querySelector('.itinerary-card');
+                                if (itineraryCardEl) {
+                                    itineraryCardEl.scrollIntoView({ behavior: 'smooth' });
+                                }
+                            }, 100);
+                        } else {
+                            console.warn('API returned empty candidates, trying next endpoint...');
+                            makeRequest(index + 1);
+                        }
+                    } catch (err) {
+                        console.error('Parsing error: ', err);
+                        makeRequest(index + 1);
+                    }
+                }, function(err) {
+                    console.warn('API Call to ' + url + ' failed. Trying next endpoint...');
+                    if (index === apiEndpoints.length - 1) {
+                        $scope.loading = false;
+                        console.error('Final API Error: ', err);
+                        const apiErrorMsg = err.data && err.data.error && err.data.error.message 
+                            ? err.data.error.message 
+                            : 'Network error or invalid API key. Please check your network connection and configuration.';
+                        $scope.errorMessage = 'Friendly Reminder: The API call failed. Details: ' + apiErrorMsg;
+                    } else {
+                        makeRequest(index + 1);
+                    }
+                });
+            };
+
+            // Start by calling the first endpoint (gemini-2.5-flash v1beta)
+            makeRequest(0);
+        };
+
+        // Parse Response parser
+        $scope.parseResponse = function(text) {
+            if (!text) return null;
+
+            let title = "Trip Itinerary";
+            let bodyContent = text;
+
+            // Strip markdown block characters
+            text = text.replace(/```json/g, '').replace(/```/g, '');
+
+            // Try to split on "Destiantion name + Iternary" : format
+            // Let's account for spelling variation in both user input and API return
+            const separatorIndex = text.indexOf(':');
+            if (separatorIndex > 0 && separatorIndex < 120) {
+                title = text.substring(0, separatorIndex).replace(/["'\*#]/g, '').trim();
+                bodyContent = text.substring(separatorIndex + 1).trim();
+            }
+
+            const lines = bodyContent.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const sections = [];
+            let currentSection = null;
+
+            // Simple rules-based parsing of the text lines
+            lines.forEach(line => {
+                // If the line starts with a title, markdown header, bold, or lists Location/Day/Hotel/Food
+                const isSectionHeader = line.startsWith('#') || 
+                                        line.toLowerCase().startsWith('location') ||
+                                        line.toLowerCase().startsWith('day') ||
+                                        line.toLowerCase().startsWith('hotel') ||
+                                        line.toLowerCase().startsWith('food') ||
+                                        (line.includes(':') && line.length < 50 && !line.includes('$') && !line.match(/[0-9]+\s*(usd|inr|eur)/i));
+
+                // Clean markdown artifacts
+                const cleanLine = line.replace(/^[\s*\-•#*]+/, '').trim();
+
+                if (isSectionHeader && cleanLine.length > 0) {
+                    if (currentSection) {
+                        sections.push(currentSection);
+                    }
+                    currentSection = {
+                        title: cleanLine.replace(/:$/, ''),
+                        items: []
+                    };
+                } else if (cleanLine.length > 0) {
+                    if (!currentSection) {
+                        currentSection = {
+                            title: "Itinerary Highlights",
+                            items: []
+                        };
+                    }
+                    currentSection.items.push(cleanLine);
+                }
+            });
+
+            if (currentSection) {
+                sections.push(currentSection);
+            }
+
+            // Fallback if formatting was unstructured
+            if (sections.length === 0) {
+                sections.push({
+                    title: "Itinerary Details",
+                    items: lines.map(line => line.replace(/^[\s*\-•#*]+/, '').trim())
+                });
+            }
+
+            return {
+                title: title,
+                sections: sections
+            };
+        };
+
+        // Utility: Copy to Clipboard
+        $scope.copyToClipboard = function() {
+            if (!$scope.itinerary) return;
+
+            let textToCopy = $scope.itinerary.title + '\n\n';
+            $scope.itinerary.sections.forEach(section => {
+                textToCopy += '--- ' + section.title + ' ---\n';
+                section.items.forEach(item => {
+                    textToCopy += '• ' + item + '\n';
+                });
+                textToCopy += '\n';
+            });
+
+            navigator.clipboard.writeText(textToCopy).then(function() {
+                alert('Itinerary copied to clipboard!');
+            }, function(err) {
+                alert('Could not copy text: ' + err);
+            });
+        };
+
+        // Reset inputs
+        $scope.resetPlanner = function() {
+            $scope.destination = '';
+            $scope.startDate = '';
+            $scope.endDate = '';
+            $scope.budget = 1500;
+            $scope.members = 2;
+            $scope.showItinerary = false;
+            $scope.itinerary = null;
+            $scope.errorMessage = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+    }]);
+</script>
+
+</body>
+</html>
