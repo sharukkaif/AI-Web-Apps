@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="cardGeneratorApp">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CardForge AI — Product Card & Analysis Generator</title>
+    
+    <!-- Google Fonts: Plus Jakarta Sans for headings, Inter for body text -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- AngularJS CDN -->
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+
+    <style>
+        /* Modern CSS Variables & Styling Reset */
+        :root {
+            --bg-default: #0b0f19;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --card-bg: rgba(17, 24, 39, 0.55);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --primary-glow: rgba(59, 130, 246, 0.5);
+            --accent-default: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.15);
+            --success: #10b981;
+            --danger: #ef4444;
+            --font-heading: 'Plus Jakarta Sans', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            color: var(--text-primary);
+            background: #0b0f19;
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            position: relative;
+            transition: background 1.5s ease;
+        }
+
+        /* Glassmorphic Background Circles */
+        .bg-glow-1, .bg-glow-2 {
+            position: absolute;
+            width: 350px;
+            height: 350px;
+            border-radius: 50%;
+            filter: blur(130px);
+            z-index: -1;
+            opacity: 0.35;
+            pointer-events: none;
+            transition: all 1.5s ease;
+        }
+
+        .bg-glow-1 {
+            top: 10%;
+            left: 10%;
+            background: var(--accent-default);
+        }
+
+        .bg-glow-2 {
+            bottom: 10%;
+            right: 10%;
+            background: #a855f7;
+        }
+
+        /* App Wrapper */
+        .app-container {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            z-index: 10;
+        }
+
+        /* Header Styles */
+        header {
+            text-align: center;
+            margin-bottom: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .logo-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            background: linear-gradient(135deg, var(--accent-default) 0%, #a855f7 100%);
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .logo-icon svg {
+            width: 1.5rem;
+            height: 1.5rem;
+            fill: #fff;
+        }
+
+        h1 {
+            font-family: var(--font-heading);
+            font-size: 2.25rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 40%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.03em;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            max-width: 500px;
+            line-height: 1.5;
+            margin-top: 0.25rem;
+        }
+
+        /* Toggle API Key Settings Button */
+        .settings-toggle-btn {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-secondary);
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .settings-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        /* Config Card */
+        .config-card {
+            background: rgba(239, 68, 68, 0.06);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 1rem;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
+        }
+
+        .config-card.configured {
+            background: rgba(16, 185, 129, 0.06);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        .config-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: var(--font-heading);
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .config-header.warning {
+            color: #f87171;
+        }
+
+        .config-header.success {
+            color: #34d399;
+        }
+
+        .config-input-wrapper {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .config-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--card-border);
+            border-radius: 0.5rem;
+            padding: 0.6rem 0.8rem;
+            color: var(--text-primary);
+            font-family: monospace;
+            font-size: 0.85rem;
+            transition: border 0.2s;
+        }
+
+        .config-input:focus {
+            outline: none;
+            border-color: var(--accent-default);
+        }
+
+        .config-save-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .config-save-btn:hover {
+            background: var(--accent-default);
+            border-color: var(--accent-default);
+        }
+
+        /* Input Card Zone */
+        .input-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 1.25rem;
+            padding: 2rem;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-family: var(--font-heading);
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            letter-spacing: 0.02em;
+        }
+
+        .input-field-wrapper {
+            position: relative;
+            display: flex;
+            width: 100%;
+        }
+
+        .idea-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1.5px solid var(--card-border);
+            border-radius: 0.75rem;
+            padding: 1rem 1.25rem;
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 1.05rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .idea-input:focus {
+            outline: none;
+            border-color: var(--accent-default);
+            box-shadow: 0 0 0 4px var(--accent-glow), inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Suggestions Pills */
+        .suggestions-container {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: -0.25rem;
+        }
+
+        .suggestion-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-right: 0.25rem;
+        }
+
+        .suggestion-tag {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--card-border);
+            color: var(--text-secondary);
+            padding: 0.4rem 0.8rem;
+            border-radius: 2rem;
+            font-size: 0.85rem;
+            font-family: var(--font-body);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .suggestion-tag:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent-default);
+            color: var(--text-primary);
+            transform: translateY(-1px);
+        }
+
+        /* Action Buttons */
+        .generate-btn {
+            background: linear-gradient(135deg, var(--accent-default) 0%, #4f46e5 100%);
+            border: none;
+            border-radius: 0.75rem;
+            padding: 1.1rem;
+            color: #ffffff;
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            width: 100%;
+        }
+
+        .generate-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px -5px rgba(59, 130, 246, 0.5);
+            background: linear-gradient(135deg, #2563eb 0%, #4338ca 100%);
+        }
+
+        .generate-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+            box-shadow: none;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            animation: rotate 2s linear infinite;
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+
+        .spinner .path {
+            stroke: currentColor;
+            stroke-linecap: round;
+            animation: dash 1.5s ease-in-out infinite;
+        }
+
+        @keyframes rotate {
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes dash {
+            0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
+            50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
+            100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
+        }
+
+        /* Scanner Scan Line Animation for Generating State */
+        .scanner-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, var(--accent-default), transparent);
+            animation: scan 2s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            50% { top: 100%; }
+            100% { top: 0; }
+        }
+
+        /* Error Notification */
+        .error-banner {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid var(--danger);
+            padding: 1rem 1.25rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .error-banner svg {
+            width: 1.25rem;
+            height: 1.25rem;
+            fill: var(--danger);
+            flex-shrink: 0;
+            margin-top: 0.1rem;
+        }
+
+        .error-message {
+            color: #fca5a5;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        /* OUTPUT SECTION - HIDDEN BY DEFAULT */
+        .output-section {
+            display: none; /* Required by spec: hidden by default */
+            width: 100%;
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        /* Visible class applied by AngularJS to trigger display */
+        .output-section.visible {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* Layout Grid: Hero card on left/top, 4 cards on right/bottom */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        @media (min-width: 900px) {
+            .dashboard-grid {
+                grid-template-columns: 1.1fr 1.9fr;
+                align-items: start;
+            }
+        }
+
+        /* Hero Card (Product Card) styling */
+        .hero-product-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 1.5rem;
+            padding: 2.5rem 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            transition: all 0.5s ease;
+        }
+
+        /* Decorative glowing halo matching custom color */
+        .card-halo {
+            position: absolute;
+            top: -20%;
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: 0;
+            opacity: 0.2;
+            pointer-events: none;
+            transition: background 1.5s ease;
+        }
+
+        .emoji-container {
+            width: 5.5rem;
+            height: 5.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 1;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .product-name {
+            font-family: var(--font-heading);
+            font-size: 1.85rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+            position: relative;
+            z-index: 1;
+            line-height: 1.2;
+        }
+
+        .product-tagline {
+            font-size: 1.05rem;
+            font-weight: 500;
+            font-style: italic;
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 1;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            display: inline-block;
+            line-height: 1.4;
+        }
+
+        .product-description {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Copy Button styling */
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--card-border);
+            border-radius: 0.75rem;
+            padding: 0.8rem 1.5rem;
+            color: var(--text-primary);
+            font-family: var(--font-heading);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--accent-default);
+            transform: translateY(-1px);
+        }
+
+        .copy-btn svg {
+            width: 1.1rem;
+            height: 1.1rem;
+            fill: currentColor;
+        }
+
+        .copy-btn.success-copy {
+            background: rgba(16, 185, 129, 0.15) !important;
+            border-color: var(--success) !important;
+            color: #34d399;
+        }
+
+        /* 4 Insight cards grid styling */
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.25rem;
+        }
+
+        @media (min-width: 600px) {
+            .details-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            /* Span final recommendations across 2 columns if on desktop */
+            .detail-card.recommendations-card {
+                grid-column: span 2;
+            }
+        }
+
+        .detail-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .detail-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .card-title-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: 1.05rem;
+            line-height: 1.2;
+        }
+
+        .card-icon {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .card-icon svg {
+            width: 1.15rem;
+            height: 1.15rem;
+            fill: #fff;
+        }
+
+        /* Bullet List styling */
+        .bullet-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+        }
+
+        .bullet-list li {
+            font-size: 0.9rem;
+            line-height: 1.45;
+            color: var(--text-secondary);
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        .bullet-list li::before {
+            content: '';
+            position: absolute;
+            left: 0.25rem;
+            top: 0.45rem;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-default);
+        }
+
+        /* Specific card customization colors */
+        .insights-card {
+            border-top: 3px solid #06b6d4;
+        }
+        .insights-card .card-icon { background: rgba(6, 182, 212, 0.15); color: #22d3ee; }
+        .insights-card .bullet-list li::before { background: #22d3ee; }
+
+        .opportunities-card {
+            border-top: 3px solid var(--success);
+        }
+        .opportunities-card .card-icon { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+        .opportunities-card .bullet-list li::before { background: #34d399; }
+
+        .risks-card {
+            border-top: 3px solid #f59e0b;
+        }
+        .risks-card .card-icon { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+        .risks-card .bullet-list li::before { background: #fbbf24; }
+
+        .recommendations-card {
+            border-top: 3px solid #8b5cf6;
+        }
+        .recommendations-card .card-icon { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
+        
+        .recommendation-text {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            font-style: italic;
+            position: relative;
+            padding-left: 1.25rem;
+            border-left: 3px solid #8b5cf6;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #475569;
+            margin-top: auto;
+            padding-top: 3rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        footer a {
+            color: #64748b;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        footer a:hover {
+            color: var(--text-secondary);
+        }
+
+        /* Animation utilities */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body ng-controller="CardController" ng-style="bodyStyle">
+
+    <!-- Decorative glows -->
+    <div class="bg-glow-1" ng-style="glow1Style"></div>
+    <div class="bg-glow-2" ng-style="glow2Style"></div>
+
+    <div class="app-container">
+        
+        <!-- Header -->
+        <header>
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2L2 22h20L12 2zm0 3.99L19.53 19H4.47L12 5.99zM13 16h-2v2h2v-2zm0-6h-2v4h2v-4z"/>
+                    </svg>
+                </div>
+                <h1>CardForge AI</h1>
+            </div>
+            <div class="subtitle">Enter a product idea to instantly generate a branded marketing card and startup viability analysis.</div>
+            
+            <!-- Gear toggle to set API Key in UI (Optional/Helper) -->
+            <button type="button" class="settings-toggle-btn" ng-click="toggleSettings()" title="Configure API Key">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </button>
+        </header>
+
+        <!-- API Settings Panel (Conditional View) -->
+        <div class="config-card" ng-class="{'configured': isApiKeySet()}" ng-show="showSettings">
+            <div class="config-header" ng-class="isApiKeySet() ? 'success' : 'warning'">
+                <span ng-if="isApiKeySet()">✓ API Key Configured</span>
+                <span ng-if="!isApiKeySet()">⚠️ Gemini API Key Required</span>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
+                To run the app, paste your Google Gemini API key below, or open the HTML file and edit the <code>const GEMINI_API_KEY</code> constant in the script.
+            </p>
+            <div class="config-input-wrapper">
+                <input type="password" class="config-input" placeholder="AIzaSy..." ng-model="tempApiKey">
+                <button type="button" class="config-save-btn" ng-click="saveApiKey()">Save Key</button>
+            </div>
+        </div>
+
+        <!-- Input Card Zone -->
+        <div class="input-card">
+            <!-- Scanline animation when generating -->
+            <div class="scanner-line" ng-show="isGenerating"></div>
+
+            <form ng-submit="generateCard()" class="input-group" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                <label for="productIdea">Product Idea</label>
+                <div class="input-field-wrapper">
+                    <input type="text" 
+                           id="productIdea" 
+                           class="idea-input" 
+                           placeholder="Describe your startup/product idea (e.g., AI study planner, auto-watering pot)..." 
+                           ng-model="productIdea" 
+                           ng-disabled="isGenerating"
+                           required>
+                </div>
+
+                <!-- Predefined Suggestions -->
+                <div class="suggestions-container">
+                    <span class="suggestion-label">Examples:</span>
+                    <button type="button" 
+                            class="suggestion-tag" 
+                            ng-repeat="item in suggestions" 
+                            ng-click="selectSuggestion(item.text)"
+                            ng-disabled="isGenerating">
+                        <span class="suggestion-emoji">{{item.emoji}}</span> {{item.text}}
+                    </button>
+                </div>
+
+                <!-- Generate Button -->
+                <button type="submit" 
+                        class="generate-btn" 
+                        ng-disabled="isGenerating || !productIdea">
+                    <span ng-if="!isGenerating">Generate Product Card</span>
+                    <span ng-if="isGenerating" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <svg class="spinner" viewBox="0 0 50 50">
+                            <circle class="path" cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="5"></circle>
+                        </svg>
+                        Generating Card...
+                    </span>
+                </button>
+            </form>
+
+            <!-- Error Banner -->
+            <div class="error-banner" ng-show="errorMessage">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
+                <div class="error-message">
+                    <strong>Generation Failed:</strong> {{errorMessage}}
+                </div>
+            </div>
+        </div>
+
+        <!-- Output section (Display is toggled via ng-class based on response) -->
+        <div class="output-section" ng-class="{'visible': hasResponse}">
+            
+            <div class="dashboard-grid">
+                
+                <!-- Main Product Card (Hero Card) -->
+                <div class="hero-product-card" ng-style="heroCardStyle">
+                    <!-- Glow effect in the background of the card -->
+                    <div class="card-halo" ng-style="cardHaloStyle"></div>
+                    
+                    <div class="emoji-container">
+                        {{productCard.emoji}}
+                    </div>
+                    
+                    <h2 class="product-name" ng-style="{'color': productCard.themeColor}">
+                        {{productCard.productName}}
+                    </h2>
+                    
+                    <div class="product-tagline" ng-style="{'border-left': '3px solid ' + productCard.themeColor}">
+                        {{productCard.tagline}}
+                    </div>
+                    
+                    <p class="product-description">
+                        {{productCard.description}}
+                    </p>
+                    
+                    <!-- Copy to Clipboard Button -->
+                    <button type="button" 
+                            class="copy-btn" 
+                            ng-class="{'success-copy': copied}"
+                            ng-click="copyToClipboard()">
+                        <span ng-if="!copied" style="display: flex; align-items: center; gap: 0.5rem;">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                            </svg>
+                            Copy Card Details
+                        </span>
+                        <span ng-if="copied" style="display: flex; align-items: center; gap: 0.5rem;">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                            </svg>
+                            Copied to Clipboard!
+                        </span>
+                    </button>
+                </div>
+
+                <!-- Viability Grid (4 Cards) -->
+                <div class="details-grid">
+                    
+                    <!-- Card 1: Key Insights -->
+                    <div class="detail-card insights-card">
+                        <div class="card-title-bar">
+                            <div class="card-icon">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zm2.85 11.1l-.85.6V16h-4v-2.3l-.85-.6C8.8 12.1 8 10.63 8 9c0-2.21 1.79-4 4-4s4 1.79 4 4c0 1.63-.8 3.1-2.15 4.1z"/>
+                                </svg>
+                            </div>
+                            Key Insights
+                        </div>
+                        <ul class="bullet-list">
+                            <li ng-repeat="item in productCard.keyInsights track by $index">{{item}}</li>
+                        </ul>
+                    </div>
+
+                    <!-- Card 2: Opportunities -->
+                    <div class="detail-card opportunities-card">
+                        <div class="card-title-bar">
+                            <div class="card-icon">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6.18-6.18 4 4L20 9.41 22.29 11.7 23 6z"/>
+                                </svg>
+                            </div>
+                            Opportunities
+                        </div>
+                        <ul class="bullet-list">
+                            <li ng-repeat="item in productCard.opportunities track by $index">{{item}}</li>
+                        </ul>
+                    </div>
+
+                    <!-- Card 3: Risks -->
+                    <div class="detail-card risks-card">
+                        <div class="card-title-bar">
+                            <div class="card-icon">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                                </svg>
+                            </div>
+                            Risks
+                        </div>
+                        <ul class="bullet-list">
+                            <li ng-repeat="item in productCard.risks track by $index">{{item}}</li>
+                        </ul>
+                    </div>
+
+                    <!-- Card 4: Final Recommendations -->
+                    <div class="detail-card recommendations-card">
+                        <div class="card-title-bar">
+                            <div class="card-icon">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/>
+                                </svg>
+                            </div>
+                            Final Recommendations
+                        </div>
+                        <p class="recommendation-text">
+                            {{productCard.finalRecommendations}}
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <div>Powered by Gemini 2.5 Flash via REST API</div>
+            <div>Built for Founders & Startup Teams</div>
+        </footer>
+
+    </div>
+
+    <!-- AngularJS Controller Script -->
+    <script>
+        // Store API key in const GEMINI_API_KEY
+        // WARNING: Keep this empty or enter your API key. If empty, the app will show a settings panel to enter it in-browser.
+        const GEMINI_API_KEY = "";
+
+        angular.module('cardGeneratorApp', [])
+        .controller('CardController', ['$scope', '$http', '$timeout', function($scope, $http, $timeout) {
+            
+            // Try loading from local storage, then constant
+            $scope.apiKey = localStorage.getItem('GEMINI_API_KEY_LOCAL') || GEMINI_API_KEY;
+            $scope.tempApiKey = $scope.apiKey;
+            
+            // Show settings panel if key is not configured
+            $scope.showSettings = !$scope.apiKey;
+            
+            // UI bindings
+            $scope.productIdea = "";
+            $scope.isGenerating = false;
+            $scope.hasResponse = false;
+            $scope.errorMessage = "";
+            $scope.copied = false;
+
+            // Default suggestions
+            $scope.suggestions = [
+                { text: "Smart Water Bottle", emoji: "💧" },
+                { text: "AI Study Assistant", emoji: "📚" },
+                { text: "Pet Health Tracker", emoji: "🐾" }
+            ];
+
+            // Default dark mode ambient gradients
+            $scope.bodyStyle = {
+                background: 'linear-gradient(135deg, #0b0f19 0%, #111827 50%, #030712 100%)'
+            };
+            
+            $scope.glow1Style = { background: '#3b82f6' };
+            $scope.glow2Style = { background: '#a855f7' };
+            
+            // Check if API key is set
+            $scope.isApiKeySet = function() {
+                return !!$scope.apiKey;
+            };
+
+            // Toggle settings panel
+            $scope.toggleSettings = function() {
+                $scope.showSettings = !$scope.showSettings;
+            };
+
+            // Save key entered in UI
+            $scope.saveApiKey = function() {
+                if ($scope.tempApiKey) {
+                    $scope.apiKey = $scope.tempApiKey.trim();
+                    localStorage.setItem('GEMINI_API_KEY_LOCAL', $scope.apiKey);
+                    $scope.showSettings = false;
+                    $scope.errorMessage = "";
+                } else {
+                    $scope.apiKey = "";
+                    localStorage.removeItem('GEMINI_API_KEY_LOCAL');
+                }
+            };
+
+            // Autofill suggested idea
+            $scope.selectSuggestion = function(text) {
+                $scope.productIdea = text;
+            };
+
+            // Call Gemini API and process response
+            $scope.generateCard = function() {
+                if (!$scope.productIdea) return;
+
+                const key = $scope.apiKey;
+                if (!key) {
+                    $scope.showSettings = true;
+                    $scope.errorMessage = "Gemini API Key is missing. Please click the settings gear at the top right to configure your API key.";
+                    return;
+                }
+
+                $scope.isGenerating = true;
+                $scope.errorMessage = "";
+                $scope.hasResponse = false;
+
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+                
+                const systemPrompt = "You are the AI Card Generator. Generate Product name, tagline, description, key insights, opportunities, risks, and final recommendations. You must respond strictly in JSON matching the exact schema provided. Do not include markdown codeblocks or wrapper tags in your text, return a clean raw JSON object only.";
+                
+                const prompt = `Generate startup marketing content and details for the product idea: "${$scope.productIdea}". Ensure all fields in the JSON schema are populated. Key insights must contain exactly 5 elements. Opportunities must contain 3-4 elements. Risks must contain 3-4 elements. Final recommendations must be 2-3 sentences.`;
+
+                const requestBody = {
+                    contents: [
+                        { parts: [{ text: prompt }] }
+                    ],
+                    systemInstruction: {
+                        parts: [{ text: systemPrompt }]
+                    },
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                productName: { type: "STRING" },
+                                tagline: { type: "STRING" },
+                                description: { type: "STRING" },
+                                emoji: { type: "STRING", description: "A single representative emoji (e.g. 💧, 📚, 🐕)" },
+                                themeColor: { type: "STRING", description: "A beautiful hex code representing the product vibe (e.g. #3b82f6)" },
+                                keyInsights: {
+                                    type: "ARRAY",
+                                    items: { type: "STRING" },
+                                    description: "Exactly 5 key market or product insights"
+                                },
+                                opportunities: {
+                                    type: "ARRAY",
+                                    items: { type: "STRING" },
+                                    description: "3-4 product or market opportunities"
+                                },
+                                risks: {
+                                    type: "ARRAY",
+                                    items: { type: "STRING" },
+                                    description: "3-4 product or market risks"
+                                },
+                                finalRecommendations: {
+                                    type: "STRING",
+                                    description: "2-3 sentences of recommendation for the founders"
+                                }
+                            },
+                            required: ["productName", "tagline", "description", "emoji", "themeColor", "keyInsights", "opportunities", "risks", "finalRecommendations"]
+                        }
+                    }
+                };
+
+                $http.post(url, requestBody)
+                .then(function(response) {
+                    try {
+                        const candidate = response.data.candidates[0];
+                        let jsonText = candidate.content.parts[0].text;
+                        
+                        // Clean up markdown block wraps if the API returned them anyway
+                        jsonText = jsonText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+                        
+                        const result = JSON.parse(jsonText);
+
+                        // Basic check
+                        if (!result.productName || !result.tagline || !result.description) {
+                            throw new Error("Missing critical product fields");
+                        }
+
+                        $scope.productCard = result;
+                        $scope.hasResponse = true;
+
+                        // Dynamic background transitions matching themeColor
+                        const themeHex = result.themeColor || "#3b82f6";
+                        const darkBackgroundHex = adjustColorBrightness(themeHex, -0.75);
+
+                        $scope.bodyStyle.background = `linear-gradient(135deg, ${darkBackgroundHex} 0%, #0d1220 60%, #030712 100%)`;
+                        $scope.glow1Style.background = themeHex;
+                        $scope.glow2Style.background = adjustColorBrightness(themeHex, -0.2);
+
+                        // Card specific styles
+                        $scope.heroCardStyle = {
+                            'border-color': 'rgba(' + hexToRgb(themeHex) + ', 0.25)',
+                            'box-shadow': '0 20px 40px -15px rgba(' + hexToRgb(themeHex) + ', 0.15), 0 0 1px 1px rgba(' + hexToRgb(themeHex) + ', 0.1)'
+                        };
+                        $scope.cardHaloStyle = {
+                            'background': themeHex
+                        };
+
+                    } catch (err) {
+                        console.error("Parsing Error:", err, response);
+                        $scope.errorMessage = "Gemini returned content in an unexpected format. Please try again.";
+                    }
+                })
+                .catch(function(error) {
+                    console.error("API Call Error:", error);
+                    let displayErr = "Failed to communicate with Gemini API. Check your connection or API key.";
+                    if (error.data && error.data.error && error.data.error.message) {
+                        displayErr = error.data.error.message;
+                    }
+                    $scope.errorMessage = displayErr;
+                })
+                .finally(function() {
+                    $scope.isGenerating = false;
+                });
+            };
+
+            // Copy formatted marketing content to clipboard
+            $scope.copyToClipboard = function() {
+                if (!$scope.productCard) return;
+
+                const card = $scope.productCard;
+                const shareText = 
+`🚀 PRODUCT CARD: ${card.emoji} ${card.productName}
+✨ TAGLINE: ${card.tagline}
+📝 DESCRIPTION: ${card.description}
+
+💡 KEY INSIGHTS:
+${card.keyInsights.map((val, idx) => `${idx + 1}. ${val}`).join('\n')}
+
+📈 OPPORTUNITIES:
+${card.opportunities.map(val => `• ${val}`).join('\n')}
+
+⚠️ RISKS:
+${card.risks.map(val => `• ${val}`).join('\n')}
+
+🎯 FINAL RECOMMENDATIONS:
+${card.finalRecommendations}`;
+
+                navigator.clipboard.writeText(shareText).then(function() {
+                    $scope.$apply(function() {
+                        $scope.copied = true;
+                        $timeout(function() {
+                            $scope.copied = false;
+                        }, 2000);
+                    });
+                }).catch(function(err) {
+                    console.error("Copy failed", err);
+                    alert("Could not copy automatically. Please select and copy manually.");
+                });
+            };
+
+            // Helpers for Color Transformations
+            function adjustColorBrightness(hex, percent) {
+                hex = hex.replace(/^\s*#|\s*$/g, '');
+                if (hex.length === 3) {
+                    hex = hex.replace(/(.)/g, '$1$1');
+                }
+
+                let r = parseInt(hex.substr(0, 2), 16),
+                    g = parseInt(hex.substr(2, 2), 16),
+                    b = parseInt(hex.substr(4, 2), 16);
+
+                r = Math.max(0, Math.min(255, r + r * percent));
+                g = Math.max(0, Math.min(255, g + g * percent));
+                b = Math.max(0, Math.min(255, b + b * percent));
+
+                const rHex = Math.round(r).toString(16).padStart(2, '0');
+                const gHex = Math.round(g).toString(16).padStart(2, '0');
+                const bHex = Math.round(b).toString(16).padStart(2, '0');
+
+                return `#${rHex}${gHex}${bHex}`;
+            }
+
+            function hexToRgb(hex) {
+                hex = hex.replace(/^\s*#|\s*$/g, '');
+                if (hex.length === 3) {
+                    hex = hex.replace(/(.)/g, '$1$1');
+                }
+                const r = parseInt(hex.substr(0, 2), 16);
+                const g = parseInt(hex.substr(2, 2), 16);
+                const b = parseInt(hex.substr(4, 2), 16);
+                return `${r}, ${g}, ${b}`;
+            }
+
+        }]);
+    </script>
+</body>
+</html>
